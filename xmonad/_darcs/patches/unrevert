@@ -1,0 +1,120 @@
+
+New patches:
+
+[unrevert
+anonymous**20071224092922] 
+<
+> {
+hunk ./XMonad/Operations.hs 136
+             tiled = (W.stack . W.workspace . W.current $ this)
+                     >>= W.filter (`M.notMember` W.floating ws)
+                     >>= W.filter (`notElem` vis)
+-            (SD (Rectangle sx sy sw sh)
++            (SD sr@(Rectangle sx sy sw sh)
+                 (gt,gb,gl,gr))          = W.screenDetail w
+             viewrect = Rectangle (sx + fromIntegral gl)        (sy + fromIntegral gt)
+                                  (sw - fromIntegral (gl + gr)) (sh - fromIntegral (gt + gb))
+hunk ./XMonad/Operations.hs 151
+ 
+         -- now the floating windows:
+         -- move/resize the floating windows, if there are any
+-        forM_ flt $ \fw -> whenJust (M.lookup fw (W.floating ws)) $
+-          \(W.RationalRect rx ry rw rh) -> do
+-            tileWindow fw $ Rectangle
+-                (sx + floor (toRational sw*rx)) (sy + floor (toRational sh*ry))
+-                (floor (toRational sw*rw)) (floor (toRational sh*rh))
++        forM_ flt $ \fw -> whenJust (M.lookup fw (W.floating ws)) $ floatWindow sr fw
+ 
+         let vs = flt ++ map fst rs
+         io $ restackWindows d vs
+hunk ./XMonad/Operations.hs 243
+                               (least $ rect_width r) (least $ rect_height r)
+     reveal w
+ 
++-- | tileWindow. Moves and resizes w such that it fits inside the given
++-- RationalRect with respect to the reference Rectangle
++floatWindow :: Rectangle -> Window -> W.RationalRect -> X ()
++floatWindow (Rectangle sx sy sw sh) w (W.RationalRect rx ry rw rh) = do
++    d  <- asks display
++    bw <- fmap wa_border_width $ io (getWindowAttributes d w)
++    -- Position and Dimension are incompatible types, so we must fromIntegral
++    -- twice
++    let bwp = fromIntegral bw :: Position
++        bwd = fromIntegral bw :: Dimension
++    tileWindow w $ Rectangle
++                (sx + floor (toRational sw*rx) - bwp) (sy + floor (toRational sh*ry) - bwp)
++                (floor (toRational sw*rw) + 2*bwd) (floor (toRational sh*rh) + 2*bwd)
++
+ -- ---------------------------------------------------------------------
+ 
+ -- | rescreen.  The screen configuration may have changed (due to
+hunk ./XMonad/Operations.hs 393
+         sr = screenRect . W.screenDetail $ sc
+         rr = W.RationalRect ((fi (wa_x wa) - fi (rect_x sr)) % fi (rect_width sr))
+                             ((fi (wa_y wa) - fi (rect_y sr)) % fi (rect_height sr))
+-                            (fi (wa_width  wa + bw*2) % fi (rect_width sr))
+-                            (fi (wa_height wa + bw*2) % fi (rect_height sr))
++                            (fi (wa_width  wa - bw*2) % fi (rect_width sr))
++                            (fi (wa_height wa - bw*2) % fi (rect_height sr))
+ 
+     return (W.screen $ sc, rr)
+   where fi x = fromIntegral x
+}
+
+Context:
+
+[Config.hs: too many users seem to be ignoring/missing the polite warning not to modify this file; change it to something a bit less polite/more obvious.
+Brent Yorgey <byorgey@gmail.com>**20071220201549] 
+[Remove desktop manageHook rules in favor of ManageDocks
+Spencer Janssen <sjanssen@cse.unl.edu>**20071222113735] 
+[Wibble
+Spencer Janssen <sjanssen@cse.unl.edu>**20071222041151] 
+[Add support for several flags:
+Spencer Janssen <sjanssen@cse.unl.edu>**20071222020520
+  --version: print xmonad's version
+  --recompile: recompile xmonad.hs if it is out of date
+  --force-recompile: recompile xmonad.hs unconditionally
+] 
+[Remove getProgName capability from restart, we don't use it anymore
+Spencer Janssen <sjanssen@cse.unl.edu>**20071219215011] 
+[Flush pending X calls before restarting
+Spencer Janssen <sjanssen@cse.unl.edu>**20071219162029] 
+[Allow for sharing of home directory across architectures.
+tim.thelion@gmail.com**20071218065146] 
+[Call 'broadcastMessage ReleaseResources' in restart
+Spencer Janssen <sjanssen@cse.unl.edu>**20071219065710] 
+[Manpage now describes config in ~/.xmonad/xmonad.hs
+Adam Vogt <vogt.adam@gmail.com>**20071219023918] 
+[Update manpage to describe greedyView
+Adam Vogt <vogt.adam@gmail.com>**20071219023726] 
+[Depend on X11-1.4.1, it has crucial bugfixes
+Spencer Janssen <sjanssen@cse.unl.edu>**20071215022100] 
+[1.4.1 X11 dep
+Don Stewart <dons@galois.com>**20071214160558] 
+[Set withdrawnState after calling hide
+Spencer Janssen <sjanssen@cse.unl.edu>**20071212060250] 
+[Remove stale comment
+Spencer Janssen <sjanssen@cse.unl.edu>**20071211084236] 
+[Make windows responsible for setting withdrawn state
+Spencer Janssen <sjanssen@cse.unl.edu>**20071211080117] 
+[Remove stale comment
+Spencer Janssen <sjanssen@cse.unl.edu>**20071211075641] 
+[Clean up stale mapped/waitingUnmap state in handle rather than unmanage.
+Spencer Janssen <sjanssen@cse.unl.edu>**20071211074810
+ This is an attempt to fix issue #96.  Thanks to jcreigh for the insights
+ necessary to fix the bug.
+] 
+[Delete windows from waitingUnmap that aren't waitng for any unmaps
+Spencer Janssen <sjanssen@cse.unl.edu>**20071211074506] 
+[man/xmonad.hs: add some documentation explaining that 'title' can be used in the manageHook just like 'resource' and 'className'.
+Brent Yorgey <byorgey@gmail.com>**20071210173357] 
+[normalize Module headers
+Lukas Mai <l.mai@web.de>**20071210085327] 
+[Add 'testing' mode, this should reduce 'darcs check' time significantly
+Spencer Janssen <sjanssen@cse.unl.edu>**20071210004704] 
+[Use XMonad meta-module in Main.hs
+Spencer Janssen <sjanssen@cse.unl.edu>**20071210004456] 
+[TAG 0.5
+Spencer Janssen <sjanssen@cse.unl.edu>**20071209233044] 
+Patch bundle hash:
+6120fd74148f762f43b3485f7729cc65a02ea71e

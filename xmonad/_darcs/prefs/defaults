@@ -1,0 +1,3 @@
+ALL umask 0002
+apply posthook cabal sdist; mv dist/xmonad* xmonad.tar.gz; rm -r dist
+apply run-posthook
